@@ -1,0 +1,31 @@
+// swt theme by Simon Schwab
+
+/*-- scss:defaults --*/
+
+// quarto bug, callout border box disappears
+$table-border-color: #dee2e6;
+
+/*-- scss:rules --*/
+
+// headings color
+h1.title, h1, h2, h3, h4 {
+    color: #003764;
+    font-weight: bold;
+}
+
+// table font size
+.kable-table {
+  font-size: 85%;
+}
+
+// logo above TOC
+#TOC::before {
+  content: "";
+  display: block;
+  height: 80px;
+  margin: 2em 20px 30px 20px;
+  background-image: url("SWT_2955_2021.png");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}

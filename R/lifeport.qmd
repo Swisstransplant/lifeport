@@ -1,0 +1,201 @@
+---
+title: 'LifePort hypothermic machine perfusion data analysis'
+subtitle: 'Showcase with code'
+author: Simon Schwab
+date: last-modified
+abstract: 'This report demonstrates how to import LifePort hypothermic machine perfusion data for research and data analysis in R.'
+lang: en
+format:
+  html:
+    toc: true
+    theme: swt.scss
+    linkcolor: '#E5005C'
+    df-print: kable
+    embed-resources: true
+    code-fold: false
+    code-block-bg: '#E6EEF0'
+    code-block-border-left: '#3F698A'
+---
+
+# Objectives
+
+This showcase imports 50 LifePort raw data sets and performs descriptive statistics. This report was created using R, RStudio, Quarto, and the Swisstransplant package (`swt`) among a few other packages. I hope this work will advance research and analysis of perfusion data.
+
+# Data import
+
+```{r}
+#| message: false
+
+library(fs)
+library(swt)
+library(ggplot2)
+library(gridExtra)
+
+col = swt::swt_colors()
+```
+
+If these packages are not already installed, you can install them using:
+
+```r
+install.packages("foo")
+```
+
+The Swisstransplant package (`swt`) can be installed from GitHub using the `remotes` package:
+
+```r
+remotes::install_github("Swisstransplant/swt")
+```
+
+Below, I define the path where the data is located in the variable `PATH_DATA`.
+
+```{r}
+PATH_DATA = file.path(path_home(), "OneDrive - Swisstransplant", 
+                      "Data", "Lifeport Rawdata", "2024")
+files = list.files(PATH_DATA, pattern = ".txt|.TXT")
+files = files[1:50] # only use 50 cases
+```
+
+## Importing raw data files
+
+I read each data file, one by one, from the first to the total number of files `length(files)`, using a for loop. The LifePort data are processed in three steps:
+
+1. **Read** the data file with `lifeport_read()`
+2. **Process** the data (e.g., signal filtering) with `lifeport_process()`
+3. **Calculate** the statistical indicators with `lifeport_sumstats()`
+
+For more details, refer to the publication at the end.
+
+::: {.callout-note}
+Reading hundreds of files will inevitably lead to errors, especially if a LifePort data file is corrupt or empty. To handle this, the problematic file must be identified and removed from the data folder. Debugging can be done by adding a `print(i)` statement in the loop to determine which file (`files[i]`) caused the issue.
+:::
+
+```{r}
+data.device = list()
+data.organ = list()
+data.timeseries = list()
+data.sumstats = list()
+
+for (i in 1:length(files)) {
+  
+  # print(i) # for debugging
+  
+  tmp = lifeport_read(file = file.path(PATH_DATA, files[i]), format = "guess")
+  tmp = lifeport_process(lpdat = tmp, window_size = 15)
+  tmp = lifeport_sumstats(lpdat = tmp, ice_threshold = 2.5)
+  
+  # add filename as well
+  tmp$data.device$Filename = files[i]
+  
+  data.device[[i]]     = tmp$data.device
+  data.organ[[i]]      = tmp$data.organ
+  data.timeseries[[i]] = tmp$data
+  data.sumstats[[i]]   = tmp$data.sumstats
+}
+
+data.device = data.table::rbindlist(data.device)
+data.organ = data.table::rbindlist(data.organ)
+data.sumstats = data.table::rbindlist(data.sumstats)
+```
+
+The code above is designed to collect all the data and store it temporarily in different lists. Once all the data has been read and processed, the lists can be transformed into data frames.
+
+## Show data
+
+### Device data
+
+The device data contains the serial number, the name of the device and the start, stop, and run time.
+
+```{r}
+n = 5
+
+data.device[1:n, -c("Filename", "Type", "SubType", "DataState", "HasGaps")]
+```
+::: {.callout-note}
+Ideally, the `UnitID` should be a short name without special characters. I believe the LifePort machines in Geneva have a special character in their `UnitID`. In such cases, the `UnitID` may not display correctly, and if it contains a name that could cause serious issues, it will be removed.
+:::
+
+### Organ data
+
+Organ data includes the kidney side, blood type, and cross-clamp time. This information is entered into the device by healthcare professionals and may be missing if not entered.
+
+```{r}
+data.organ[1:n, c("KidneySide", "BloodType", "CrossClampTime.Date")]
+```
+
+### Summary statistics data
+
+The summary statistics data are particularly interesting, as they include various values such as mean ice temperature, mean discharge, and more. See the publication at the end for more details.
+
+```{r}
+n = 10
+
+data.sumstats[1:n, ]
+```
+
+### Time series data
+
+Even the complete time series data can be accessed, below an example for the first kidney, the first five samples, and the first 
+
+```{r}
+data.timeseries[[1]][1:10, c("FlowRate", "FlowRate.flt")]
+```
+
+# Descriptive statistics
+
+Here are some examples of how to visualize the data and perform some statistics.
+
+### Plotting the data
+
+```{r}
+#| fig-height: 5
+#| fig-width: 5
+#| warning: false
+
+k = 4 # which time series to show
+t = 1:1000 # show first 100 seconds
+
+p1 = ggplot(data.sumstats, aes(x = iceContainerTemperature.mean)) + 
+  geom_histogram(bins = 10, alpha = 0.7, fill = col$blue.alt) +
+  xlab("Mean ice temperatue") +
+  labs(tag = "A") + swt_style()
+
+p2 = ggplot(data.sumstats, aes(x = flowRate.mean, y = organResistance.mean)) + 
+  geom_point(size = 2, alpha = 0.7, col = col$strongred.akzent) +
+  scale_color_manual(values = col$blue.swt) +
+  xlab("Mean flow rate") + ylab("Mean organ resistance") +
+  labs(tag = "B") + swt_style()
+
+p3 = ggplot(data.timeseries[[k]][t,], aes(x = time.clock, y = FlowRate)) + 
+  geom_line(size = 1, alpha = 1, col = col$turkis.tpx) +
+  xlab("Clock Time") + ylab("Flow rate (raw)") + 
+  labs(tag = "C") + swt_style()
+  
+p4 = ggplot(data.timeseries[[k]][t,], aes(x = time.zero, y = FlowRate.flt)) + 
+  geom_line(size = 1, alpha = 1, col = col$purple.alt) +
+  xlab("Time starting at 0") + ylab("Flow rate (filtered)") +
+  labs(tag = "D") + swt_style()
+
+grid.arrange(p1, p2, p3, p4, nrow = 2, ncol = 2)
+```
+
+### Mean (IQR) of the perfusion duration
+
+Flow rate was converted to the unit hours.
+
+```{r}
+data.frame(median = median_iqr(data.sumstats$perfusion.dur/60))
+```
+### Mean (IQR) of flow rate
+
+To clarify, each kidney has a mean flow rate and I calculate the median across all the mean flow rates.
+
+```{r}
+data.frame(median = median_iqr(data.sumstats$flowRate.mean))
+```
+
+# Computing information
+
+```{r}
+sessionInfo()
+```
+
