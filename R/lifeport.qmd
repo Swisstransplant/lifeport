@@ -10,6 +10,8 @@ format:
     toc: true
     theme: swt.scss
     linkcolor: '#E5005C'
+    link-external-icon: true
+    link-external-newwindow: true
     df-print: kable
     embed-resources: true
     code-fold: false
@@ -19,7 +21,7 @@ format:
 
 # Objectives
 
-This showcase imports 50 LifePort raw data sets and performs descriptive statistics. This report was created using R, RStudio, Quarto, and the Swisstransplant package (`swt`) among a few other packages. I hope this work will advance research and analysis of perfusion data.
+This showcase imports 50 LifePort raw data sets and performs descriptive statistics. This report was created using R, RStudio, Quarto, and the Swisstransplant package (`swt`). I hope this work will advance research and analysis of perfusion data.
 
 # Data import
 
@@ -65,7 +67,7 @@ I read each data file, one by one, from the first to the total number of files `
 
 For more details, refer to the publication at the end.
 
-::: {.callout-note}
+::: {.callout-note appearance="simple"}
 Reading hundreds of files will inevitably lead to errors, especially if a LifePort data file is corrupt or empty. To handle this, the problematic file must be identified and removed from the data folder. Debugging can be done by adding a `print(i)` statement in the loop to determine which file (`files[i]`) caused the issue.
 :::
 
@@ -134,7 +136,7 @@ data.sumstats[1:n, ]
 
 ### Time series data
 
-Even the complete time series data can be accessed, below an example for the first kidney, the first five samples, and the first 
+The complete time series data is also available, below an example for the first kidney, the first 10 samples, along the filtered (smoothed) time seires. Due to filtering, the first few and the last few values are missing.
 
 ```{r}
 data.timeseries[[1]][1:10, c("FlowRate", "FlowRate.flt")]
@@ -169,10 +171,10 @@ p3 = ggplot(data.timeseries[[k]][t,], aes(x = time.clock, y = FlowRate)) +
   geom_line(size = 1, alpha = 1, col = col$turkis.tpx) +
   xlab("Clock Time") + ylab("Flow rate (raw)") + 
   labs(tag = "C") + swt_style()
-  
+
 p4 = ggplot(data.timeseries[[k]][t,], aes(x = time.zero, y = FlowRate.flt)) + 
   geom_line(size = 1, alpha = 1, col = col$purple.alt) +
-  xlab("Time starting at 0") + ylab("Flow rate (filtered)") +
+  xlab("Time (starting from 0)") + ylab("Flow rate (filtered)") +
   labs(tag = "D") + swt_style()
 
 grid.arrange(p1, p2, p3, p4, nrow = 2, ncol = 2)
@@ -185,6 +187,7 @@ Flow rate was converted to the unit hours.
 ```{r}
 data.frame(median = median_iqr(data.sumstats$perfusion.dur/60))
 ```
+
 ### Mean (IQR) of flow rate
 
 To clarify, each kidney has a mean flow rate and I calculate the median across all the mean flow rates.
@@ -192,6 +195,18 @@ To clarify, each kidney has a mean flow rate and I calculate the median across a
 ```{r}
 data.frame(median = median_iqr(data.sumstats$flowRate.mean))
 ```
+
+# Reference
+
+::: {.callout-important appearance="simple"}
+Please be sure to cite the following paper in your research when utilizing EXAM or the Swisstranplant `swt` package for machine perfusion data analysis.
+:::
+
+Schwab S, Steck H, Binet I, Elmer A, Ender W, Franscini N, Haidar F, Kuhn C, Sidler D, Storni F, Krügel N, Immer F. EXAM: Ex-vivo allograft monitoring dashboard for the analysis of hypothermic machine perfusion data in deceased-donor kidney transplantation. *PLOS Digit Health.* 2024;3(12):e0000691. [doi:10.1371/journal.pdig.0000691](http://dx.doi.org/10.1371/journal.pdig.0000691)
+
+# Contact
+
+Please contact me for any inqueries regarding the analysis of perfusion data <simon.schwab@swisstransplant.org>, I'm happy to help.
 
 # Computing information
 
