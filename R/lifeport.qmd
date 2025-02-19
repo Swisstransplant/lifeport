@@ -169,11 +169,13 @@ p2 = ggplot(data.sumstats, aes(x = flowRate.mean, y = organResistance.mean)) +
 
 p3 = ggplot(data.timeseries[[k]][t,], aes(x = time.clock, y = FlowRate)) + 
   geom_line(size = 1, alpha = 1, col = col$turkis.tpx) +
+  ylim(c(0, 200)) +
   xlab("Clock Time") + ylab("Flow rate (raw)") + 
   labs(tag = "C") + swt_style()
 
 p4 = ggplot(data.timeseries[[k]][t,], aes(x = time.zero, y = FlowRate.flt)) + 
   geom_line(size = 1, alpha = 1, col = col$purple.alt) +
+  ylim(c(0, 200)) +
   xlab("Time (starting from 0)") + ylab("Flow rate (filtered)") +
   labs(tag = "D") + swt_style()
 
