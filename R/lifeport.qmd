@@ -9,21 +9,16 @@ format:
   html:
     toc: true
     theme: swt.scss
-    linkcolor: '#E5005C'
-    link-external-icon: true
-    link-external-newwindow: true
     df-print: kable
     embed-resources: true
-    code-fold: false
-    code-block-bg: '#E6EEF0'
-    code-block-border-left: '#3F698A'
+    code-fold: true
 ---
 
-# Objectives
+## Objectives
 
 This showcase imports 50 LifePort raw data sets and performs descriptive statistics. This report was created using R, RStudio, Quarto, and the Swisstransplant package (`swt`). I hope this work will advance research and analysis of perfusion data.
 
-# Data import
+## Data import
 
 ```{r}
 #| message: false
@@ -57,7 +52,7 @@ files = list.files(PATH_DATA, pattern = ".txt|.TXT")
 files = files[1:50] # only use 50 cases
 ```
 
-## Importing raw data files
+### Raw data files
 
 I read each data file, one by one, from the first to the total number of files `length(files)`, using a for loop. The LifePort data are processed in three steps:
 
@@ -101,11 +96,11 @@ data.sumstats = data.table::rbindlist(data.sumstats)
 
 The code above is designed to collect all the data and store it temporarily in different lists. Once all the data has been read and processed, the lists can be transformed into data frames.
 
-## Show data
+### Data access in R
 
-### Device data
+#### Device data
 
-The device data contains the serial number, the name of the device and the start, stop, and run time.
+The device data contains the serial number, the name of the device, the start, stop, and run time.
 
 ```{r}
 n = 5
@@ -116,7 +111,7 @@ data.device[1:n, -c("Filename", "Type", "SubType", "DataState", "HasGaps")]
 Ideally, the `UnitID` should be a short name without special characters. I believe the LifePort machines in Geneva have a special character in their `UnitID`. In such cases, the `UnitID` may not display correctly, and if it contains a name that could cause serious issues, it will be removed.
 :::
 
-### Organ data
+#### Organ data
 
 Organ data includes the kidney side, blood type, and cross-clamp time. This information is entered into the device by healthcare professionals and may be missing if not entered.
 
@@ -124,9 +119,9 @@ Organ data includes the kidney side, blood type, and cross-clamp time. This info
 data.organ[1:n, c("KidneySide", "BloodType", "CrossClampTime.Date")]
 ```
 
-### Summary statistics data
+#### Summary statistics data
 
-The summary statistics data are particularly interesting, as they include various values such as mean ice temperature, mean discharge, and more. See the publication at the end for more details.
+The summary statistics data are particularly interesting as they include various values such as mean ice temperature, mean discharge, and more. See the publication at the end for more details.
 
 ```{r}
 n = 10
@@ -134,15 +129,15 @@ n = 10
 data.sumstats[1:n, ]
 ```
 
-### Time series data
+#### Time series data
 
-The complete time series data is also available, below an example for the first kidney, the first 10 samples, along the filtered (smoothed) time seires. Due to filtering, the first few and the last few values are missing.
+The complete time series data is also available. Below is an example for the first kidney, the first 10 samples, along with the filtered (smoothed) time series. Due to filtering, the first few and the last few values are missing.
 
 ```{r}
 data.timeseries[[1]][1:10, c("FlowRate", "FlowRate.flt")]
 ```
 
-# Descriptive statistics
+## Descriptive statistics
 
 Here are some examples of how to visualize the data and perform some statistics.
 
@@ -157,12 +152,12 @@ k = 4 # which time series to show
 t = 1:1000 # show first 100 seconds
 
 p1 = ggplot(data.sumstats, aes(x = iceContainerTemperature.mean)) + 
-  geom_histogram(bins = 10, alpha = 0.7, fill = col$blue.alt) +
+  geom_histogram(bins = 10, alpha = 1, fill = col$blue.alt) +
   xlab("Mean ice temperatue") +
   labs(tag = "A") + swt_style()
 
 p2 = ggplot(data.sumstats, aes(x = flowRate.mean, y = organResistance.mean)) + 
-  geom_point(size = 2, alpha = 0.7, col = col$strongred.akzent) +
+  geom_point(size = 2, alpha = 0.5, col = col$strongred.akzent) +
   scale_color_manual(values = col$blue.swt) +
   xlab("Mean flow rate") + ylab("Mean organ resistance") +
   labs(tag = "B") + swt_style()
@@ -192,13 +187,13 @@ data.frame(median = median_iqr(data.sumstats$perfusion.dur/60))
 
 ### Mean (IQR) of flow rate
 
-To clarify, each kidney has a mean flow rate and I calculate the median across all the mean flow rates.
+To clarify, each kidney has a mean flow rate, and I calculate the median across all the mean flow rates.
 
 ```{r}
 data.frame(median = median_iqr(data.sumstats$flowRate.mean))
 ```
 
-# References
+## References
 
 ::: {.callout-important appearance="simple"}
 Please be sure to cite the following work in your research when utilizing EXAM or the Swisstranplant `swt` package for machine perfusion data analysis.
@@ -210,11 +205,11 @@ Schwab S. EXAM: Ex Vivo Allograft Monitoring Dashboard. Github; 2025. Accessed F
 
 Schwab S. swt: Swisstransplant R Package. Github; 2024. Accessed February 13, 2025. <https://github.com/Swisstransplant/swt>
 
-# Contact
+## Contact
 
-Please feel free to contact me at <simon.schwab@swisstransplant.org>, with any inquiries regarding the analysis of perfusion data; I'm happy to assist.
+Please feel free to contact me at <simon.schwab@swisstransplant.org> with any inquiries regarding the analysis of perfusion data; I'm happy to assist.
 
-# Computing information
+## Computing information
 
 ```{r}
 sessionInfo()
